@@ -1,0 +1,32 @@
+# Runtime output
+runs/
+dist/
+bookframes-project/
+tests/tmp/
+
+# Local source books and private uploads
+inputs/
+*.epub
+*.pdf
+*.docx
+
+# Local model / Python environments
+.venv*/
+venv/
+__pycache__/
+*.pyc
+
+# Node / package-manager noise
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# System and editor files
+.DS_Store
+.idea/
+.vscode/
+
+# BookFrames edit snapshots
+.bookframes-snapshots/

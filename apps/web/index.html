@@ -1,0 +1,218 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>BookFrames Workbench</title>
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <div class="brand">
+        <div class="mark" aria-hidden="true"></div>
+        <div>
+          <h1>BookFrames</h1>
+          <div id="projectMeta" class="meta-line">未加载项目</div>
+        </div>
+      </div>
+      <nav class="top-actions" aria-label="Workbench actions">
+        <button id="openChangeButton" type="button">修改意见</button>
+        <button id="loadDemoButton" type="button">加载示例</button>
+        <label class="file-button">
+          <input id="projectFileInput" type="file" accept="application/json,.json,.epub,application/epub+zip,.pdf,application/pdf,.txt,text/plain,.md,.markdown,text/markdown" />
+          载入项目/书源
+        </label>
+      </nav>
+    </header>
+
+    <main class="workspace">
+      <aside class="left-rail" aria-label="Create project">
+        <section class="tool-section">
+          <h2>导入</h2>
+          <label>
+            <span>源文件</span>
+            <input id="sourceInput" type="text" value="~/Books/story.pdf" />
+          </label>
+          <label>
+            <span>输出目录</span>
+            <input id="outInput" type="text" value="runs/story" />
+          </label>
+          <label>
+            <span>标题</span>
+            <input id="titleInput" type="text" value="Story" />
+          </label>
+          <label>
+            <span>PDF 引擎</span>
+            <select id="pdfEngineInput">
+              <option value="auto">auto-fast</option>
+              <option value="mineru-pipeline">MinerU pipeline</option>
+              <option value="mineru-hybrid">MinerU hybrid</option>
+              <option value="mineru-vlm">MinerU VLM</option>
+              <option value="native">native only</option>
+            </select>
+          </label>
+          <label>
+            <span>OCR 速度</span>
+            <select id="ocrPresetInput">
+              <option value="fast">快速</option>
+              <option value="balanced" selected>平衡</option>
+              <option value="accurate">高精度</option>
+            </select>
+          </label>
+          <label>
+            <span>OCR 页数上限</span>
+            <input id="ocrMaxPagesInput" type="number" min="1" step="1" placeholder="全书" />
+          </label>
+          <label>
+            <span>绘本语言</span>
+            <select id="langInput">
+              <option value="auto">自动识别</option>
+              <option value="zh">中文</option>
+              <option value="ja">日本語</option>
+              <option value="en">English</option>
+              <option value="zh-en">中文 + English</option>
+              <option value="zh-ja">中文 + 日本語</option>
+              <option value="ja-en">日本語 + English</option>
+            </select>
+          </label>
+          <label>
+            <span>页数规划</span>
+            <input id="spreadsInput" type="text" value="full-coverage" list="spreadsOptions" autocomplete="off" />
+            <datalist id="spreadsOptions">
+              <option value="full-coverage"></option>
+              <option value="codex-auto"></option>
+              <option value="1"></option>
+              <option value="2"></option>
+              <option value="3"></option>
+              <option value="4"></option>
+              <option value="5"></option>
+              <option value="6"></option>
+              <option value="7"></option>
+              <option value="8"></option>
+            </datalist>
+            <small class="field-hint">默认 full-coverage 尽量覆盖全书；codex-auto 可做摘要规划；也可填 1-8。</small>
+          </label>
+        </section>
+
+        <section class="tool-section">
+          <h2>命令</h2>
+          <button id="importAutoButton" type="button">导入并自动绘制整本</button>
+          <div id="bookRunView" class="image-run-list"></div>
+          <pre id="createCommand" class="command"></pre>
+          <button id="copyCommandButton" type="button">复制创建命令</button>
+          <pre id="queueCommand" class="command"></pre>
+          <button id="copyQueueButton" type="button">复制队列命令</button>
+        </section>
+      </aside>
+
+      <section class="stage" aria-label="Project review">
+        <section class="summary-band" id="summaryBand"></section>
+        <section class="review-grid">
+          <article class="review-panel">
+            <h2>导入审稿</h2>
+            <div id="qualityView"></div>
+          </article>
+          <article class="review-panel">
+            <h2>故事规划</h2>
+            <div id="planningView"></div>
+          </article>
+        </section>
+
+        <section class="chapters-section">
+          <div class="section-head">
+            <h2>章节与页面</h2>
+            <select id="chapterFilter" aria-label="Chapter filter">
+              <option value="all">全部章节</option>
+            </select>
+          </div>
+          <div id="chapterList" class="chapter-list"></div>
+        </section>
+      </section>
+
+      <aside class="right-rail" aria-label="Queue and export">
+        <section class="tool-section">
+          <h2>画图队列</h2>
+          <div class="queue-actions">
+            <button id="copyNextPromptButton" type="button">复制下一张 Prompt</button>
+            <button id="importLatestImageButton" type="button">导入最近图片</button>
+            <button id="generateApiImageButton" type="button">本地 Codex 生成 1 张</button>
+            <button id="generateFullBookButton" type="button">自动绘制整本</button>
+          </div>
+          <div id="imageActionStatus" class="mini-status"></div>
+          <div id="imageRunView" class="image-run-list"></div>
+          <div id="queueView" class="queue-list"></div>
+        </section>
+
+        <section class="tool-section">
+          <h2>导出</h2>
+          <label>
+            <span>字幕模式</span>
+            <select id="captionModeInput">
+              <option value="zh-en" selected>中文 + English</option>
+              <option value="zh">中文</option>
+              <option value="en">English</option>
+              <option value="zh-ja">中文 + 日本語</option>
+              <option value="ja-en">日本語 + English</option>
+            </select>
+            <small class="field-hint">只改字幕和导出文件，不重画图片。</small>
+          </label>
+          <button id="convertCaptionsButton" type="button">字幕改成中英</button>
+          <button id="exportBookButton" type="button">导出绘本</button>
+          <div id="exportStatus" class="mini-status"></div>
+          <div id="exportsView" class="export-list"></div>
+        </section>
+
+        <section class="tool-section">
+          <h2>修改请求</h2>
+          <div id="changeRequestView" class="change-request-list"></div>
+        </section>
+
+        <section class="tool-section">
+          <h2>页面审计</h2>
+          <div id="pageAuditView" class="audit-list"></div>
+        </section>
+      </aside>
+    </main>
+  </div>
+
+  <dialog id="changeDialog" class="change-dialog">
+    <form method="dialog" class="change-form">
+      <header class="dialog-head">
+        <div>
+          <h2>修改意见</h2>
+          <p id="changeProjectLabel">未加载项目</p>
+        </div>
+        <button id="closeChangeButton" type="button" aria-label="Close">关闭</button>
+      </header>
+
+      <label>
+        <span>修改范围</span>
+        <select id="changeTargetInput">
+          <option value="overall">整体绘本</option>
+          <option value="import">导入/OCR</option>
+          <option value="planning">章节/故事规划</option>
+          <option value="spread">分镜/页面</option>
+          <option value="image-prompts">画图提示词</option>
+          <option value="exports">导出</option>
+          <option value="frontend">前端工作台</option>
+        </select>
+      </label>
+
+      <label>
+        <span>具体意见</span>
+        <textarea id="changeFeedbackInput" rows="8" placeholder="例如：第三章节奏太快，把第 2 页改成夜晚场景；Mira 的人物外观要保持红雨衣；画图提示词增加水彩纸纹理。"></textarea>
+      </label>
+
+      <div class="dialog-actions">
+        <button id="planChangeButton" type="button">生成修改计划</button>
+        <button id="submitChangeButton" type="button">提交队列</button>
+        <button id="runChangeButton" type="button">提交并调用 Codex</button>
+      </div>
+      <div id="changeDialogStatus" class="dialog-status"></div>
+    </form>
+  </dialog>
+
+  <script src="./app.js"></script>
+</body>
+</html>

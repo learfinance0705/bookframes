@@ -1,0 +1,29 @@
+{
+  "name": "bookframes-generator",
+  "version": "0.1.0",
+  "description": "Local-first staged generator that turns source books into inspectable picture-book projects.",
+  "private": true,
+  "license": "MIT",
+  "type": "module",
+  "bin": {
+    "bookframes": "apps/cli/index.js"
+  },
+  "scripts": {
+    "bookframes": "node apps/cli/index.js",
+    "demo": "node apps/cli/index.js create examples/tiny-adventure.txt --out runs/tiny-adventure --title \"Tiny Adventure\" --spreads-per-chapter 3",
+    "web": "node apps/web/server.js",
+    "test": "node tests/smoke.test.js"
+  },
+  "keywords": [
+    "picture-book",
+    "book-adaptation",
+    "ocr",
+    "codex",
+    "local-first",
+    "epub",
+    "pdf"
+  ],
+  "engines": {
+    "node": ">=20"
+  }
+}
