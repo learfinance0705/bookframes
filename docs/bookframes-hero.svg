@@ -1,0 +1,82 @@
+<svg width="1280" height="720" viewBox="0 0 1280 720" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">BookFrames product preview</title>
+  <desc id="desc">A visual overview of BookFrames turning a source book into a full-coverage picture-book project with planning, image queue, and exports.</desc>
+  <rect width="1280" height="720" rx="0" fill="#F8F3E8"/>
+  <rect x="42" y="42" width="1196" height="636" rx="18" fill="#FFFDF8" stroke="#213238" stroke-width="3"/>
+  <rect x="42" y="42" width="1196" height="86" rx="18" fill="#20343A"/>
+  <path d="M42 110H1238" stroke="#20343A" stroke-width="3"/>
+  <rect x="78" y="72" width="42" height="42" rx="7" fill="url(#mark)" stroke="#F8F3E8" stroke-width="2"/>
+  <text x="140" y="100" fill="#FFFDF8" font-family="Avenir Next, Inter, Arial, sans-serif" font-size="34" font-weight="800">BookFrames</text>
+  <text x="379" y="100" fill="#D8CBB7" font-family="Avenir Next, Inter, Arial, sans-serif" font-size="18" font-weight="700">Complete-book picture-book generator</text>
+
+  <g transform="translate(78 170)">
+    <rect width="258" height="404" rx="12" fill="#FFF8ED" stroke="#D8CBB7" stroke-width="2"/>
+    <text x="26" y="44" fill="#2F5366" font-family="Avenir Next, Inter, Arial, sans-serif" font-size="16" font-weight="800">SOURCE BOOK</text>
+    <rect x="26" y="74" width="206" height="264" rx="8" fill="#F3E5CE" stroke="#213238" stroke-width="2"/>
+    <path d="M68 74V338" stroke="#D8CBB7" stroke-width="2"/>
+    <path d="M100 122H199M100 154H210M100 186H191M100 218H218M100 250H203M100 282H182" stroke="#65777C" stroke-width="8" stroke-linecap="round"/>
+    <rect x="26" y="362" width="92" height="24" rx="12" fill="#2F7D79"/>
+    <text x="45" y="380" fill="#FFFDF8" font-family="Avenir Next, Inter, Arial, sans-serif" font-size="12" font-weight="800">EPUB</text>
+    <rect x="128" y="362" width="104" height="24" rx="12" fill="#D69A2D"/>
+    <text x="148" y="380" fill="#20343A" font-family="Avenir Next, Inter, Arial, sans-serif" font-size="12" font-weight="800">PDF/OCR</text>
+  </g>
+
+  <path d="M361 372H444" stroke="#213238" stroke-width="5" stroke-linecap="round"/>
+  <path d="M430 350L452 372L430 394" stroke="#213238" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <g transform="translate(470 170)">
+    <rect width="340" height="404" rx="12" fill="#FFF8ED" stroke="#D8CBB7" stroke-width="2"/>
+    <text x="26" y="44" fill="#2F5366" font-family="Avenir Next, Inter, Arial, sans-serif" font-size="16" font-weight="800">FULL-COVERAGE PLAN</text>
+    <rect x="26" y="72" width="288" height="58" rx="8" fill="#FFFDF8" stroke="#D8CBB7" stroke-width="2"/>
+    <text x="46" y="108" fill="#213238" font-family="Avenir Next, Inter, Arial, sans-serif" font-size="24" font-weight="850">30 chapters · 250 pages</text>
+    <g transform="translate(26 158)">
+      <rect width="288" height="26" rx="6" fill="#EADCC4"/>
+      <rect width="180" height="26" rx="6" fill="#2F7D79"/>
+      <text x="12" y="18" fill="#FFFDF8" font-family="Avenir Next, Inter, Arial, sans-serif" font-size="12" font-weight="800">source grounded spreads</text>
+    </g>
+    <g transform="translate(26 210)">
+      <rect width="84" height="112" rx="7" fill="#D69A2D"/>
+      <rect x="102" width="84" height="112" rx="7" fill="#C55349"/>
+      <rect x="204" width="84" height="112" rx="7" fill="#2F7D79"/>
+      <path d="M18 32H66M18 58H58M18 84H68" stroke="#FFF8ED" stroke-width="7" stroke-linecap="round"/>
+      <path d="M120 32H168M120 58H158M120 84H172" stroke="#FFF8ED" stroke-width="7" stroke-linecap="round"/>
+      <path d="M222 32H270M222 58H260M222 84H272" stroke="#FFF8ED" stroke-width="7" stroke-linecap="round"/>
+    </g>
+    <text x="26" y="368" fill="#65777C" font-family="Avenir Next, Inter, Arial, sans-serif" font-size="15" font-weight="700">reviewable artifacts, not hidden magic</text>
+  </g>
+
+  <path d="M836 372H918" stroke="#213238" stroke-width="5" stroke-linecap="round"/>
+  <path d="M904 350L926 372L904 394" stroke="#213238" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <g transform="translate(944 170)">
+    <rect width="258" height="404" rx="12" fill="#FFF8ED" stroke="#D8CBB7" stroke-width="2"/>
+    <text x="26" y="44" fill="#2F5366" font-family="Avenir Next, Inter, Arial, sans-serif" font-size="16" font-weight="800">DRAW + EXPORT</text>
+    <rect x="26" y="74" width="206" height="138" rx="8" fill="#20343A"/>
+    <circle cx="78" cy="130" r="28" fill="#D69A2D"/>
+    <path d="M45 184C72 146 100 154 128 184C148 151 178 140 220 184" stroke="#2F7D79" stroke-width="14" stroke-linecap="round"/>
+    <rect x="26" y="236" width="206" height="28" rx="14" fill="#EADCC4"/>
+    <rect x="26" y="236" width="44" height="28" rx="14" fill="#2F7D79"/>
+    <text x="82" y="256" fill="#213238" font-family="Avenir Next, Inter, Arial, sans-serif" font-size="15" font-weight="850">53 / 250</text>
+    <g transform="translate(26 294)">
+      <rect width="92" height="28" rx="14" fill="#FFFDF8" stroke="#213238" stroke-width="2"/>
+      <text x="25" y="19" fill="#213238" font-family="Avenir Next, Inter, Arial, sans-serif" font-size="12" font-weight="800">HTML</text>
+      <rect x="112" width="94" height="28" rx="14" fill="#FFFDF8" stroke="#213238" stroke-width="2"/>
+      <text x="144" y="19" fill="#213238" font-family="Avenir Next, Inter, Arial, sans-serif" font-size="12" font-weight="800">PDF</text>
+      <rect y="44" width="92" height="28" rx="14" fill="#FFFDF8" stroke="#213238" stroke-width="2"/>
+      <text x="29" y="63" fill="#213238" font-family="Avenir Next, Inter, Arial, sans-serif" font-size="12" font-weight="800">EPUB</text>
+      <rect x="112" y="44" width="94" height="28" rx="14" fill="#FFFDF8" stroke="#213238" stroke-width="2"/>
+      <text x="139" y="63" fill="#213238" font-family="Avenir Next, Inter, Arial, sans-serif" font-size="12" font-weight="800">ZH+EN</text>
+    </g>
+  </g>
+
+  <text x="78" y="634" fill="#213238" font-family="Avenir Next, Inter, Arial, sans-serif" font-size="24" font-weight="850">Import. Audit. Plan. Draw. Localize. Export.</text>
+  <text x="78" y="666" fill="#65777C" font-family="Avenir Next, Inter, Arial, sans-serif" font-size="17" font-weight="700">A local-first workbench for turning real books into complete picture-book projects.</text>
+
+  <defs>
+    <linearGradient id="mark" x1="78" y1="72" x2="120" y2="114" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#D69A2D"/>
+      <stop offset="0.56" stop-color="#C55349"/>
+      <stop offset="1" stop-color="#2F7D79"/>
+    </linearGradient>
+  </defs>
+</svg>

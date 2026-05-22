@@ -2,6 +2,8 @@
 
 Turn a book into a complete, inspectable picture-book project.
 
+![BookFrames turns source books into complete picture-book projects](docs/bookframes-hero.svg)
+
 BookFrames is not a one-shot "make me a children's book" toy. It is a staged generator for serious long-form adaptation: import the source, audit the extraction, plan every chapter, ground every spread in source text, localize captions, draw images, and export a reader, print view, PDF, and EPUB.
 
 The core product bet is simple: beautiful output only matters if the whole chain is reviewable.
