@@ -4,9 +4,21 @@ Turn a book into a complete, inspectable picture-book project.
 
 ![BookFrames turns source books into complete picture-book projects](docs/bookframes-hero.svg)
 
-BookFrames is not a one-shot "make me a children's book" toy. It is a staged generator for serious long-form adaptation: import the source, audit the extraction, plan every chapter, ground every spread in source text, localize captions, draw images, and export a reader, print view, PDF, and EPUB.
+A book should not become six random images.
+
+BookFrames turns source books into complete, reviewable picture-book projects: import the source, audit the extraction, plan every chapter, ground every spread in source text, localize captions, draw images, and export a reader, print view, PDF, and EPUB.
 
 The core product bet is simple: beautiful output only matters if the whole chain is reviewable.
+
+## Actual Run
+
+These are not mockups. They are real outputs from the included `examples/tiny-adventure.txt` demo after a local Codex image run.
+
+![A contact sheet of generated BookFrames picture-book spreads](docs/demo/tiny-adventure-contact-sheet.jpg)
+
+| Generated spread | Inspectable Studio |
+| --- | --- |
+| ![A generated watercolor picture-book spread from BookFrames](docs/demo/tiny-adventure-spread.jpg) | ![BookFrames Studio showing chapters, images, prompts, characters, and style bible](docs/demo/tiny-adventure-studio.jpg) |
 
 ## Why It Exists
 
