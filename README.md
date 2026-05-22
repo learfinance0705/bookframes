@@ -1,37 +1,45 @@
+<div align="center">
+
 # BookFrames
 
-Turn a book into a complete, inspectable picture-book project.
+### Stop making trailers. Make the book.
 
-![BookFrames turns source books into complete picture-book projects](docs/bookframes-hero.svg)
+**BookFrames turns an entire source book into a complete, inspectable picture-book project: pages, prompts, images, bilingual captions, and exports.**
 
-A book should not become six random images.
+![Actual BookFrames output: generated picture-book spreads](docs/demo/tiny-adventure-contact-sheet.jpg)
 
-BookFrames turns source books into complete, reviewable picture-book projects: import the source, audit the extraction, plan every chapter, ground every spread in source text, localize captions, draw images, and export a reader, print view, PDF, and EPUB.
+**Actual output from the included `Tiny Adventure` demo. Not a mockup.**
 
-The core product bet is simple: beautiful output only matters if the whole chain is reviewable.
+[Quick Start](#quick-start) · [Actual Run](#actual-run) · [Why It Spreads](#why-it-spreads) · [Workbench](#workbench)
+
+</div>
 
 ## Actual Run
 
-These are not mockups. They are real outputs from the included `examples/tiny-adventure.txt` demo after a local Codex image run.
+One tiny source story became:
 
-![A contact sheet of generated BookFrames picture-book spreads](docs/demo/tiny-adventure-contact-sheet.jpg)
+**3 chapters → 9 planned spreads → 9 generated illustrations → character references → Studio review → HTML/PDF/EPUB exports**
 
-| Generated spread | Inspectable Studio |
+| The picture book people notice | The control room editors trust |
 | --- | --- |
 | ![A generated watercolor picture-book spread from BookFrames](docs/demo/tiny-adventure-spread.jpg) | ![BookFrames Studio showing chapters, images, prompts, characters, and style bible](docs/demo/tiny-adventure-studio.jpg) |
 
-## Why It Exists
+## Why It Spreads
 
-Most AI picture-book tools collapse a source book into a handful of pretty scenes. That is fine for a demo and useless for a real book.
+Most AI picture-book tools make a trailer. BookFrames makes the book.
 
-BookFrames is built for the opposite workflow:
+That difference is the hook:
 
-- Complete-book coverage by default with `full-coverage` planning.
-- Source-grounded spreads with excerpts and traceability.
-- Local review artifacts for OCR, chapter splitting, story planning, characters, captions, and images.
-- A browser workbench that shows import quality, page plan, drawing queue, change requests, and exports in one place.
-- A no-API-key local Codex image path, plus an optional OpenAI image API provider.
-- Caption localization that can change subtitles and exports without redrawing images.
+- **Whole-book by default**: `full-coverage` planning is the main path, not an advanced setting.
+- **Source-grounded pages**: every spread keeps excerpts and traceability, so the book does not drift into generic vibes.
+- **A real editor surface**: import quality, page plan, prompts, characters, image queue, change requests, and exports live in one workbench.
+- **Local-first drawing**: no `OPENAI_API_KEY` required for the default Codex-local image flow.
+- **Caption-only localization**: switch to `中文 + English` without redrawing images.
+- **Restartable long runs**: pause, resume, and skip already completed pages.
+
+The product bet is simple: beautiful output only matters if the whole chain is reviewable.
+
+![BookFrames pipeline overview](docs/bookframes-hero.svg)
 
 ## What You Get
 
