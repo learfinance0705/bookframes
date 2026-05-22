@@ -10,7 +10,7 @@
 
 **Actual output from the included `Tiny Adventure` demo. Not a mockup.**
 
-[Quick Start](#quick-start) · [Actual Run](#actual-run) · [Why It Spreads](#why-it-spreads) · [Workbench](#workbench)
+[Quick Start](#quick-start) · [Actual Run](#actual-run) · [Why It Spreads](#why-it-spreads) · [Workbench](#workbench) · [Model Connections](#model-connections)
 
 </div>
 
@@ -127,8 +127,31 @@ It supports:
 - Local Codex image queue progress.
 - Pause-ready persisted image runs under `runs/_image-runs/`.
 - Change requests that write Codex-ready prompts under `runs/_change-requests/`.
+- Model connection settings for local Codex, OpenAI, OpenRouter, Ollama, or a custom endpoint.
 - Caption conversion such as `中文 + English` without redrawing images.
 - Export refresh for reader, print, PDF, and EPUB.
+
+## Model Connections
+
+Open the workbench and use **大模型接入**.
+
+Supported connection profiles:
+
+- `local-codex`: default local Codex planning and image flow.
+- `openai`: OpenAI text and image models, with API images available from the workbench.
+- `openrouter`: OpenAI-compatible text routing through OpenRouter.
+- `ollama`: local model endpoint, defaulting to `http://127.0.0.1:11434`.
+- `custom`: any OpenAI-compatible base URL you run yourself.
+
+Secrets are not stored in the browser or committed to the repo. The UI saves only the provider, model names, base URL, and the environment variable name under `runs/_config/model-config.json`.
+
+Examples:
+
+```bash
+OPENAI_API_KEY=... npm run web
+OPENROUTER_API_KEY=... npm run web
+OLLAMA_HOST=http://127.0.0.1:11434 npm run web
+```
 
 ## Caption-Only Localization
 

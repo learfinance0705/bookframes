@@ -29,11 +29,23 @@ const requestsDir = path.join(rootDir, "runs", "_change-requests");
 const imageRunsDir = path.join(rootDir, "runs", "_image-runs");
 const bookRunsDir = path.join(rootDir, "runs", "_book-runs");
 const uploadRunsDir = path.join(rootDir, "runs", "_uploads");
+const modelConfigFile = path.join(rootDir, "runs", "_config", "model-config.json");
 const defaultPort = Number(process.env.PORT || 4197);
 const codexBin = process.env.CODEX_BIN || "/Applications/Codex.app/Contents/Resources/codex";
 const activeRuns = new Map();
 const activeImageRuns = new Map();
 const activeBookRuns = new Map();
+
+const modelProviderOptions = new Set(["local-codex", "openai", "openrouter", "ollama", "custom"]);
+const defaultModelConfig = {
+  provider: "local-codex",
+  textModel: "gpt-5.5",
+  imageModel: "codex-local",
+  baseUrl: "",
+  apiKeyEnv: "OPENAI_API_KEY",
+  planningMode: "local-codex",
+  captionMode: "local-codex",
+};
 
 const mimeTypes = {
   ".html": "text/html; charset=utf-8",
@@ -54,13 +66,14 @@ export function createBookFramesServer({
   requestRoot = requestsDir,
   imageRunRoot = imageRunsDir,
   bookRunRoot = bookRunsDir,
+  modelConfigPath = modelConfigFile,
   codexPath = codexBin,
 } = {}) {
   return createServer(async (req, res) => {
     try {
       const url = new URL(req.url || "/", "http://127.0.0.1");
       if (url.pathname.startsWith("/api/")) {
-        await handleApi(req, res, url, { root, requestRoot, imageRunRoot, bookRunRoot, codexPath });
+        await handleApi(req, res, url, { root, requestRoot, imageRunRoot, bookRunRoot, modelConfigPath, codexPath });
         return;
       }
       await serveStatic(req, res, url, root);
@@ -71,6 +84,41 @@ export function createBookFramesServer({
 }
 
 async function handleApi(req, res, url, options) {
+  if (req.method === "GET" && url.pathname === "/api/model-config") {
+    const config = await readModelConfig(options.modelConfigPath);
+    sendJson(res, 200, {
+      ok: true,
+      config,
+      env: modelConfigEnvStatus(config),
+      providerOptions: [...modelProviderOptions],
+    });
+    return;
+  }
+
+  if (req.method === "POST" && url.pathname === "/api/model-config") {
+    const payload = await readJson(req);
+    const config = await writeModelConfig(payload.config || payload, options.modelConfigPath);
+    sendJson(res, 200, {
+      ok: true,
+      config,
+      env: modelConfigEnvStatus(config),
+    });
+    return;
+  }
+
+  if (req.method === "POST" && url.pathname === "/api/model-config/test") {
+    const payload = await readJson(req);
+    const config = normalizeModelConfig(payload.config || payload || await readModelConfig(options.modelConfigPath));
+    const result = await testModelConnection(config, { codexPath: options.codexPath });
+    sendJson(res, 200, {
+      ok: true,
+      config,
+      env: modelConfigEnvStatus(config),
+      result,
+    });
+    return;
+  }
+
   if (req.method === "POST" && url.pathname === "/api/change-requests") {
     const payload = await readJson(req);
     const request = await saveChangeRequest(payload, options);
@@ -224,6 +272,216 @@ async function handleApi(req, res, url, options) {
   sendJson(res, 404, { ok: false, error: "API route not found" });
 }
 
+async function readModelConfig(configPath = modelConfigFile) {
+  const stored = await readJsonFile(configPath).catch(() => ({}));
+  return normalizeModelConfig(stored);
+}
+
+async function writeModelConfig(payload, configPath = modelConfigFile) {
+  const config = {
+    ...normalizeModelConfig(payload),
+    updatedAt: new Date().toISOString(),
+  };
+  await mkdir(path.dirname(configPath), { recursive: true });
+  await writeFile(configPath, JSON.stringify(config, null, 2), "utf8");
+  return config;
+}
+
+function normalizeModelConfig(payload = {}) {
+  const raw = payload && typeof payload === "object" ? payload : {};
+  const provider = modelProviderOptions.has(String(raw.provider || "")) ? String(raw.provider) : defaultModelConfig.provider;
+  return {
+    provider,
+    textModel: cleanModelField(raw.textModel, defaultTextModel(provider)),
+    imageModel: cleanModelField(raw.imageModel, defaultImageModel(provider)),
+    baseUrl: cleanUrlField(raw.baseUrl, defaultBaseUrl(provider)),
+    apiKeyEnv: cleanEnvName(raw.apiKeyEnv, defaultApiKeyEnv(provider)),
+    planningMode: cleanModelField(raw.planningMode, provider === "local-codex" ? "local-codex" : "api"),
+    captionMode: cleanModelField(raw.captionMode, provider === "local-codex" ? "local-codex" : "api"),
+    updatedAt: cleanModelField(raw.updatedAt, ""),
+  };
+}
+
+function modelConfigEnvStatus(config) {
+  const normalized = normalizeModelConfig(config);
+  const apiKeyEnv = normalized.apiKeyEnv;
+  return {
+    apiKeyEnv,
+    apiKeyEnvPresent: Boolean(apiKeyEnv && process.env[apiKeyEnv]),
+    openaiApiKeyPresent: Boolean(process.env.OPENAI_API_KEY),
+    openrouterApiKeyPresent: Boolean(process.env.OPENROUTER_API_KEY),
+    codexBin: codexBin,
+    codeXBinOverridden: Boolean(process.env.CODEX_BIN),
+    ollamaHost: process.env.OLLAMA_HOST || "",
+  };
+}
+
+async function testModelConnection(config, { codexPath = codexBin } = {}) {
+  const normalized = normalizeModelConfig(config);
+  if (normalized.provider === "local-codex") {
+    const result = await runProcessCapture(codexPath, ["login", "status"], { timeoutMs: 5000 });
+    return {
+      provider: normalized.provider,
+      ok: result.exitCode === 0,
+      status: result.exitCode === 0 ? "ready" : "needs_auth",
+      message: result.exitCode === 0
+        ? "Local Codex is available."
+        : "Local Codex did not report an authenticated session. Run codex login --device-auth.",
+      detail: tailText([result.stdout, result.stderr].filter(Boolean).join("\n"), 600),
+    };
+  }
+
+  if (normalized.provider === "ollama") {
+    return testOllamaConnection(normalized);
+  }
+
+  const env = modelConfigEnvStatus(normalized);
+  return {
+    provider: normalized.provider,
+    ok: env.apiKeyEnvPresent,
+    status: env.apiKeyEnvPresent ? "ready" : "missing_api_key",
+    message: env.apiKeyEnvPresent
+      ? `${normalized.provider} is configured through ${env.apiKeyEnv}.`
+      : `Set ${env.apiKeyEnv} before starting the web server.`,
+    detail: normalized.baseUrl ? `Base URL: ${normalized.baseUrl}` : "",
+  };
+}
+
+async function testOllamaConnection(config) {
+  const baseUrl = config.baseUrl || defaultBaseUrl("ollama");
+  if (!isLocalModelUrl(baseUrl)) {
+    return {
+      provider: "ollama",
+      ok: false,
+      status: "local_only_check",
+      message: "Ollama checks only call localhost URLs from the workbench.",
+      detail: baseUrl,
+    };
+  }
+  if (typeof fetch !== "function") {
+    return {
+      provider: "ollama",
+      ok: false,
+      status: "fetch_unavailable",
+      message: "This Node runtime cannot call the Ollama health endpoint.",
+      detail: baseUrl,
+    };
+  }
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 1800);
+  try {
+    const response = await fetch(`${baseUrl.replace(/\/+$/, "")}/api/tags`, { signal: controller.signal });
+    const data = await response.json().catch(() => ({}));
+    const models = Array.isArray(data.models) ? data.models.map((item) => item.name).filter(Boolean) : [];
+    return {
+      provider: "ollama",
+      ok: response.ok,
+      status: response.ok ? "ready" : "unavailable",
+      message: response.ok ? "Ollama responded locally." : `Ollama returned HTTP ${response.status}.`,
+      detail: models.slice(0, 5).join(", "),
+    };
+  } catch (error) {
+    return {
+      provider: "ollama",
+      ok: false,
+      status: "unavailable",
+      message: "Ollama is not reachable at the configured local URL.",
+      detail: error.message,
+    };
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+function runProcessCapture(command, args, { timeoutMs = 5000 } = {}) {
+  return new Promise((resolve) => {
+    const child = spawn(command, args, {
+      cwd: rootDir,
+      env: process.env,
+      stdio: ["ignore", "pipe", "pipe"],
+    });
+    let settled = false;
+    let stdout = "";
+    let stderr = "";
+    let timer = null;
+    const finish = (exitCode, error = null) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      resolve({
+        exitCode,
+        stdout: tailText(stdout, 2000),
+        stderr: error ? error.message : tailText(stderr, 2000),
+      });
+    };
+    timer = setTimeout(() => {
+      child.kill("SIGTERM");
+      finish(124);
+    }, timeoutMs);
+    child.stdout.on("data", (chunk) => {
+      stdout += chunk.toString();
+    });
+    child.stderr.on("data", (chunk) => {
+      stderr += chunk.toString();
+    });
+    child.on("error", (error) => finish(127, error));
+    child.on("close", (exitCode) => finish(exitCode ?? 1));
+  });
+}
+
+function cleanModelField(value, fallback) {
+  const text = String(value || "").trim();
+  return text ? text.slice(0, 160) : fallback;
+}
+
+function cleanUrlField(value, fallback) {
+  const text = String(value || "").trim();
+  if (!text) return fallback;
+  return /^https?:\/\//i.test(text) ? text.slice(0, 240) : fallback;
+}
+
+function cleanEnvName(value, fallback) {
+  const text = String(value || "").trim().replace(/[^A-Za-z0-9_]/g, "_").toUpperCase();
+  return (text || fallback).slice(0, 64);
+}
+
+function defaultTextModel(provider) {
+  if (provider === "openrouter") return "openai/gpt-5.5";
+  if (provider === "ollama") return "qwen3:14b";
+  if (provider === "custom") return "model-name";
+  return defaultModelConfig.textModel;
+}
+
+function defaultImageModel(provider) {
+  if (provider === "openai") return process.env.OPENAI_IMAGE_MODEL || "gpt-image-1";
+  if (provider === "openrouter") return "";
+  if (provider === "ollama") return "";
+  if (provider === "custom") return "";
+  return defaultModelConfig.imageModel;
+}
+
+function defaultBaseUrl(provider) {
+  if (provider === "openrouter") return "https://openrouter.ai/api/v1";
+  if (provider === "ollama") return process.env.OLLAMA_HOST || "http://127.0.0.1:11434";
+  return "";
+}
+
+function defaultApiKeyEnv(provider) {
+  if (provider === "openrouter") return "OPENROUTER_API_KEY";
+  if (provider === "ollama") return "";
+  if (provider === "custom") return "LLM_API_KEY";
+  return "OPENAI_API_KEY";
+}
+
+function isLocalModelUrl(value) {
+  try {
+    const url = new URL(value);
+    return ["localhost", "127.0.0.1", "::1", "[::1]"].includes(url.hostname);
+  } catch {
+    return false;
+  }
+}
+
 async function startImageRun(payload, {
   root = rootDir,
   imageRunRoot = imageRunsDir,
@@ -244,16 +502,21 @@ async function startImageRun(payload, {
   const id = makeRequestId();
   const now = new Date().toISOString();
   const jobPath = path.join(imageRunRoot, `${id}.json`);
+  const requestedLimit = Number(payload.limit || 1);
   const job = {
     schemaVersion: 1,
     id,
     status: "queued",
     provider,
     mode,
+    model: String(payload.model || ""),
+    apiKeyEnv: cleanEnvName(payload.apiKeyEnv, "OPENAI_API_KEY"),
+    size: String(payload.size || ""),
+    quality: String(payload.quality || ""),
     projectPath: String(payload.projectPath || ""),
     projectFile,
     projectDir: path.dirname(projectFile),
-    limit: provider === "codex-exec" && mode === "all" ? 0 : provider === "codex-exec" ? 1 : Math.max(1, Number(payload.limit || 1)),
+    limit: provider === "codex-exec" && mode === "all" ? 0 : provider === "codex-exec" ? 1 : Math.max(1, Number.isFinite(requestedLimit) ? requestedLimit : 1),
     progress: 0,
     stage: "queued",
     createdAt: now,
@@ -309,8 +572,14 @@ async function runImageJobInBackground(job, { root = rootDir, imageRunRoot = ima
       stage: "calling OpenAI image API",
       updatedAt: new Date().toISOString(),
     });
+    const apiKey = job.apiKeyEnv ? process.env[job.apiKeyEnv] : process.env.OPENAI_API_KEY;
+    if (!apiKey) throw new Error(`${job.apiKeyEnv || "OPENAI_API_KEY"} is required for OpenAI image generation.`);
     const result = await generateOpenAIImagesForProject(job.projectFile, {
       limit: job.limit,
+      apiKey,
+      model: job.model || undefined,
+      size: job.size || undefined,
+      quality: job.quality || undefined,
     });
     const completed = {
       ...await readImageRun(job.id, imageRunRoot),

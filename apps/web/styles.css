@@ -668,12 +668,22 @@ button:disabled {
   padding: 6px 9px;
 }
 
+.model-actions button {
+  flex: 1 1 108px;
+  min-height: 32px;
+  padding: 6px 9px;
+}
+
 .mini-status {
   min-height: 18px;
   color: var(--muted);
   font-size: 12px;
   line-height: 1.45;
   overflow-wrap: anywhere;
+}
+
+.mini-status span {
+  display: block;
 }
 
 .mini-status[data-tone="good"] {

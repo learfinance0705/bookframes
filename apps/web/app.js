@@ -12,6 +12,9 @@ const state = {
   changeBusy: false,
   exportBusy: false,
   importBusy: false,
+  modelConfig: null,
+  modelEnv: null,
+  modelConfigBusy: false,
 };
 
 const AUTO_SPREAD_PLAN_VALUES = new Set([
@@ -78,6 +81,14 @@ const els = {
   ocrMaxPagesInput: document.getElementById("ocrMaxPagesInput"),
   langInput: document.getElementById("langInput"),
   spreadsInput: document.getElementById("spreadsInput"),
+  modelProviderInput: document.getElementById("modelProviderInput"),
+  modelTextInput: document.getElementById("modelTextInput"),
+  modelImageInput: document.getElementById("modelImageInput"),
+  modelBaseUrlInput: document.getElementById("modelBaseUrlInput"),
+  modelApiKeyEnvInput: document.getElementById("modelApiKeyEnvInput"),
+  saveModelConfigButton: document.getElementById("saveModelConfigButton"),
+  testModelConfigButton: document.getElementById("testModelConfigButton"),
+  modelConfigStatus: document.getElementById("modelConfigStatus"),
   createCommand: document.getElementById("createCommand"),
   queueCommand: document.getElementById("queueCommand"),
   importAutoButton: document.getElementById("importAutoButton"),
@@ -130,7 +141,22 @@ async function init() {
   ]) {
     input.addEventListener("input", renderCommands);
   }
+  for (const input of [
+    els.modelTextInput,
+    els.modelImageInput,
+    els.modelBaseUrlInput,
+    els.modelApiKeyEnvInput,
+  ]) {
+    input.addEventListener("input", () => {
+      state.modelConfig = modelConfigFromInputs();
+      renderModelConfigStatus();
+      renderCommands();
+    });
+  }
 
+  els.modelProviderInput.addEventListener("change", handleModelProviderChange);
+  els.saveModelConfigButton.addEventListener("click", saveModelConfig);
+  els.testModelConfigButton.addEventListener("click", testModelConfig);
   els.copyCommandButton.addEventListener("click", () => copyText(els.createCommand.textContent));
   els.copyQueueButton.addEventListener("click", () => copyText(els.queueCommand.textContent));
   els.importAutoButton.addEventListener("click", startAutoImportRun);
@@ -151,6 +177,7 @@ async function init() {
   els.captionModeInput.addEventListener("input", updateCaptionModeButton);
   els.exportBookButton.addEventListener("click", exportBook);
 
+  await loadModelConfig();
   const params = new URLSearchParams(window.location.search);
   const project = params.get("project");
   if (project) {
@@ -316,6 +343,194 @@ function renderProject() {
   updateCaptionModeButton();
   setExportBusy(state.exportBusy);
   updateRevisionGate(project);
+}
+
+async function loadModelConfig() {
+  try {
+    const response = await fetch("/api/model-config");
+    const data = await response.json();
+    if (!response.ok || !data.ok) throw new Error(data.error || response.statusText);
+    applyModelConfig(data.config, data.env);
+  } catch {
+    applyModelConfig(defaultModelConfigForProvider("local-codex"), {
+      apiKeyEnv: "OPENAI_API_KEY",
+      apiKeyEnvPresent: false,
+    });
+  }
+}
+
+function applyModelConfig(config, env = null) {
+  const normalized = {
+    ...defaultModelConfigForProvider(config?.provider || "local-codex"),
+    ...(config || {}),
+  };
+  state.modelConfig = normalized;
+  state.modelEnv = env;
+  els.modelProviderInput.value = normalized.provider;
+  els.modelTextInput.value = normalized.textModel || "";
+  els.modelImageInput.value = normalized.imageModel || "";
+  els.modelBaseUrlInput.value = normalized.baseUrl || "";
+  els.modelApiKeyEnvInput.value = normalized.apiKeyEnv || "";
+  updateModelDependentButtons();
+  renderModelConfigStatus();
+  renderCommands();
+}
+
+function handleModelProviderChange() {
+  applyModelConfig(defaultModelConfigForProvider(els.modelProviderInput.value), state.modelEnv);
+}
+
+function modelConfigFromInputs() {
+  const provider = els.modelProviderInput.value || "local-codex";
+  return {
+    provider,
+    textModel: els.modelTextInput.value.trim(),
+    imageModel: els.modelImageInput.value.trim(),
+    baseUrl: els.modelBaseUrlInput.value.trim(),
+    apiKeyEnv: els.modelApiKeyEnvInput.value.trim(),
+    planningMode: provider === "local-codex" ? "local-codex" : "api",
+    captionMode: provider === "local-codex" ? "local-codex" : "api",
+  };
+}
+
+async function saveModelConfig() {
+  setModelConfigBusy(true);
+  state.modelConfig = modelConfigFromInputs();
+  renderModelConfigStatus({ ok: true, message: "正在保存连接..." });
+  try {
+    const response = await fetch("/api/model-config", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ config: state.modelConfig }),
+    });
+    const data = await response.json();
+    if (!response.ok || !data.ok) throw new Error(data.error || response.statusText);
+    applyModelConfig(data.config, data.env);
+    renderModelConfigStatus({ ok: true, message: "连接已保存。" });
+  } catch (error) {
+    renderModelConfigStatus({ ok: false, message: `保存失败：${error.message}` });
+  } finally {
+    setModelConfigBusy(false);
+  }
+}
+
+async function testModelConfig() {
+  setModelConfigBusy(true);
+  state.modelConfig = modelConfigFromInputs();
+  renderModelConfigStatus({ ok: true, message: "正在检测连接..." });
+  try {
+    const response = await fetch("/api/model-config/test", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ config: state.modelConfig }),
+    });
+    const data = await response.json();
+    if (!response.ok || !data.ok) throw new Error(data.error || response.statusText);
+    state.modelConfig = data.config;
+    state.modelEnv = data.env;
+    renderModelConfigStatus(data.result);
+  } catch (error) {
+    renderModelConfigStatus({ ok: false, message: `检测失败：${error.message}` });
+  } finally {
+    setModelConfigBusy(false);
+  }
+}
+
+function renderModelConfigStatus(result = null) {
+  const config = state.modelConfig || modelConfigFromInputs();
+  const env = state.modelEnv || {};
+  const provider = modelProviderLabel(config.provider);
+  const imageProvider = imageProviderForCurrentModel(config) === "openai-image" ? "OpenAI 图片 API" : "本地 Codex 图片";
+  const envLabel = config.provider === "local-codex"
+    ? "本地授权"
+    : config.provider === "ollama"
+      ? "本地端点"
+    : `${config.apiKeyEnv || "API_KEY"} ${env.apiKeyEnvPresent ? "已设置" : "未设置"}`;
+  const tone = result ? (result.ok ? "good" : "bad") : config.provider === "local-codex" || config.provider === "ollama" || env.apiKeyEnvPresent ? "good" : "warn";
+  const message = result?.message || `${provider} · ${envLabel} · ${imageProvider}`;
+  els.modelConfigStatus.dataset.tone = tone;
+  els.modelConfigStatus.innerHTML = `
+    <span>${escapeHtml(message)}</span>
+    ${config.baseUrl ? `<span>${escapeHtml(config.baseUrl)}</span>` : ""}
+    ${result?.detail ? `<span>${escapeHtml(result.detail)}</span>` : ""}
+  `;
+  updateModelDependentButtons();
+}
+
+function setModelConfigBusy(isBusy) {
+  state.modelConfigBusy = Boolean(isBusy);
+  els.saveModelConfigButton.disabled = isBusy;
+  els.testModelConfigButton.disabled = isBusy;
+}
+
+function updateModelDependentButtons() {
+  const provider = imageProviderForCurrentModel();
+  els.generateApiImageButton.textContent = provider === "openai-image" ? "OpenAI 生成 1 张" : "本地 Codex 生成 1 张";
+  els.generateApiImageButton.title = provider === "openai-image"
+    ? "使用 OPENAI_API_KEY 和图片模型生成当前队列下一张"
+    : "使用本地 Codex 生成当前队列下一张";
+}
+
+function imageProviderForCurrentModel(config = state.modelConfig) {
+  const provider = config?.provider || "local-codex";
+  const imageModel = String(config?.imageModel || "").trim();
+  if (provider === "openai" && imageModel && imageModel !== "codex-local") return "openai-image";
+  return "codex-exec";
+}
+
+function defaultModelConfigForProvider(provider) {
+  const selected = provider || "local-codex";
+  const defaults = {
+    "local-codex": {
+      provider: "local-codex",
+      textModel: "gpt-5.5",
+      imageModel: "codex-local",
+      baseUrl: "",
+      apiKeyEnv: "OPENAI_API_KEY",
+    },
+    openai: {
+      provider: "openai",
+      textModel: "gpt-5.5",
+      imageModel: "gpt-image-1",
+      baseUrl: "",
+      apiKeyEnv: "OPENAI_API_KEY",
+    },
+    openrouter: {
+      provider: "openrouter",
+      textModel: "openai/gpt-5.5",
+      imageModel: "",
+      baseUrl: "https://openrouter.ai/api/v1",
+      apiKeyEnv: "OPENROUTER_API_KEY",
+    },
+    ollama: {
+      provider: "ollama",
+      textModel: "qwen3:14b",
+      imageModel: "",
+      baseUrl: "http://127.0.0.1:11434",
+      apiKeyEnv: "",
+    },
+    custom: {
+      provider: "custom",
+      textModel: "model-name",
+      imageModel: "",
+      baseUrl: "",
+      apiKeyEnv: "LLM_API_KEY",
+    },
+  };
+  return {
+    ...defaults["local-codex"],
+    ...(defaults[selected] || {}),
+  };
+}
+
+function modelProviderLabel(provider) {
+  return {
+    "local-codex": "本地 Codex",
+    openai: "OpenAI",
+    openrouter: "OpenRouter",
+    ollama: "Ollama",
+    custom: "自定义接口",
+  }[provider] || provider || "模型";
 }
 
 async function startAutoImportRun() {
@@ -582,8 +797,10 @@ async function generateOneImageWithLocalCodex() {
     setImageActionStatus("当前项目不是本地服务路径，不能生成。", "bad");
     return;
   }
+  const provider = imageProviderForCurrentModel();
+  const providerLabel = provider === "openai-image" ? "OpenAI 图片 API" : "本地 Codex";
   setImageActionBusy(true);
-  setImageActionStatus("正在启动本地 Codex 图片任务...", "warn");
+  setImageActionStatus(`正在启动${providerLabel}图片任务...`, "warn");
   try {
     const response = await fetch("/api/image-runs", {
       method: "POST",
@@ -591,14 +808,16 @@ async function generateOneImageWithLocalCodex() {
       body: JSON.stringify({
         projectPath: state.projectPath,
         limit: 1,
-        provider: "codex-exec",
+        provider,
+        model: state.modelConfig?.imageModel || "",
+        apiKeyEnv: state.modelConfig?.apiKeyEnv || "OPENAI_API_KEY",
       }),
     });
     const data = await response.json();
     if (!response.ok || !data.ok) throw new Error(data.error || response.statusText);
     state.lastImageRun = data.job;
     renderImageRun();
-    setImageActionStatus(`已启动本地 Codex 任务：${data.job.id}`, "good");
+    setImageActionStatus(`已启动${providerLabel}任务：${data.job.id}`, "good");
     pollImageRun(data.job.id);
   } catch (error) {
     setImageActionStatus(`生成失败：${error.message}`, "bad");
@@ -1306,11 +1525,17 @@ function renderCommands() {
   const ocrLanguage = ocrLanguageForMode(languageMode);
   const langPart = isPdf && ocrLanguage ? ` --mineru-lang ${ocrLanguage}` : "";
   els.createCommand.textContent = `node apps/cli/index.js create ${quote(source)} --out ${quote(out)}${titlePart}${languagePart}${pdfPart}${ocrTuningPart}${langPart} --spreads-per-chapter ${spreads} --image-provider codex-local`;
+  const config = state.modelConfig || defaultModelConfigForProvider("local-codex");
+  const apiImageLine = config.provider === "openai"
+    ? `${config.apiKeyEnv || "OPENAI_API_KEY"}=... node apps/cli/index.js generate-openai ${quote(out)} --limit 1${config.imageModel ? ` --model ${quote(config.imageModel)}` : ""}`
+    : "";
   els.queueCommand.textContent = [
     `# 网页中的“导入并自动绘制整本”会创建 book-run，并顺序调用本地 Codex 画完整本。`,
+    config.provider !== "local-codex" ? `# 当前大模型连接：${modelProviderLabel(config.provider)} · 文本 ${config.textModel || "model"} · 密钥环境变量 ${config.apiKeyEnv || "API_KEY"}` : `# 当前大模型连接：本地 Codex`,
     `node apps/cli/index.js codex-jobs ${quote(out)} --limit 6`,
+    apiImageLine,
     `node apps/cli/index.js export ${quote(out)}`,
-  ].join("\n");
+  ].filter(Boolean).join("\n");
 }
 
 function updateCaptionModeButton() {

@@ -96,6 +96,42 @@
         </section>
 
         <section class="tool-section">
+          <h2>大模型接入</h2>
+          <label>
+            <span>连接方式</span>
+            <select id="modelProviderInput">
+              <option value="local-codex">本地 Codex</option>
+              <option value="openai">OpenAI</option>
+              <option value="openrouter">OpenRouter</option>
+              <option value="ollama">Ollama</option>
+              <option value="custom">自定义接口</option>
+            </select>
+          </label>
+          <label>
+            <span>文本模型</span>
+            <input id="modelTextInput" type="text" value="gpt-5.5" autocomplete="off" />
+          </label>
+          <label>
+            <span>图片模型</span>
+            <input id="modelImageInput" type="text" value="codex-local" autocomplete="off" />
+          </label>
+          <label>
+            <span>Base URL</span>
+            <input id="modelBaseUrlInput" type="url" placeholder="http://127.0.0.1:11434" autocomplete="off" />
+          </label>
+          <label>
+            <span>API Key 环境变量</span>
+            <input id="modelApiKeyEnvInput" type="text" value="OPENAI_API_KEY" autocomplete="off" />
+            <small class="field-hint">不在浏览器保存密钥；请在启动服务前设置环境变量。</small>
+          </label>
+          <div class="inline-actions model-actions">
+            <button id="saveModelConfigButton" type="button">保存连接</button>
+            <button id="testModelConfigButton" type="button">检测连接</button>
+          </div>
+          <div id="modelConfigStatus" class="mini-status"></div>
+        </section>
+
+        <section class="tool-section">
           <h2>命令</h2>
           <button id="importAutoButton" type="button">导入并自动绘制整本</button>
           <div id="bookRunView" class="image-run-list"></div>
